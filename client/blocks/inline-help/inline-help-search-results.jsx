@@ -19,6 +19,7 @@ import getInlineHelpSearchResultsForQuery from 'state/inline-help/selectors/get-
 import getSelectedResultIndex from 'state/inline-help/selectors/get-selected-result-index';
 import isRequestingInlineHelpSearchResultsForQuery from 'state/inline-help/selectors/is-requesting-inline-help-search-results-for-query';
 import hasInlineHelpAPIResults from 'state/selectors/has-inline-help-api-results';
+import getAdminHelpResults from 'state/inline-help/selectors/get-admin-help-results';
 import { getSiteSlug } from 'state/sites/selectors';
 import { getSelectedSiteId } from 'state/ui/selectors';
 import { selectResult } from 'state/inline-help/actions';
@@ -34,6 +35,7 @@ function HelpSearchResults( {
 	selectSearchResult,
 	translate = identity,
 	placeholderLines,
+	siteSlug,
 } ) {
 	const selectResultHandler = ( selectionIndex ) => ( event ) => {
 		const selectedResult = searchResults?.[ selectionIndex ] ?? null;
@@ -75,10 +77,32 @@ function HelpSearchResults( {
 		);
 	};
 
+	const renderAdminHelpResults = () => {
+		if ( ! searchQuery ) {
+			return null;
+		}
+
+		const results = getAdminHelpResults( searchQuery, siteSlug );
+		if ( ! results?.length ) {
+			return null;
+		}
+
+		return (
+			<div className="inline-help__find-section">
+				<h2 className="inline-help__view-heading">{
+					translate( 'Show me where I can:' )
+				}</h2>
+				<ul className="inline-help__results-list">
+				</ul>
+			</div>
+		);
+	};
+
 	return (
 		<>
 			<QueryInlineHelpSearch query={ searchQuery } />
 			{ renderSearchResults() }
+			{ renderAdminHelpResults() }
 		</>
 	);
 }
