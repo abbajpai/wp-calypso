@@ -87,7 +87,6 @@ export class JetpackConnectMain extends Component {
 			currentUrl: cleanUrl( url ),
 			shownUrl: url,
 		} );
-		url;
 	};
 
 	checkUrl( url ) {
@@ -144,7 +143,6 @@ export class JetpackConnectMain extends Component {
 
 	render() {
 		const { renderFooter, status, type } = this.props;
-
 		return (
 			<MainWrapper>
 				{ this.renderLocaleSuggestions() }

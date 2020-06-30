@@ -33,6 +33,7 @@ const CheckoutStepDataContext = React.createContext();
 const CheckoutSingleStepDataContext = React.createContext();
 
 export function Checkout( { children, className } ) {
+	const { isRTL } = useI18n();
 	const { formStatus } = useFormStatus();
 	const [ activeStepNumber, setActiveStepNumber ] = useState( 1 );
 	const [ stepCompleteStatus, setStepCompleteStatus ] = useState( {} );
@@ -45,9 +46,15 @@ export function Checkout( { children, className } ) {
 
 	const getDefaultCheckoutSteps = () => <DefaultCheckoutSteps />;
 
+	const classNames = joinClasses( [
+		'composite-checkout',
+		...( className ? [ className ] : [] ),
+		...( isRTL() ? [ 'rtl' ] : [] ),
+	] );
+
 	if ( formStatus === 'loading' ) {
 		return (
-			<ContainerUI className={ joinClasses( [ className, 'composite-checkout' ] ) }>
+			<ContainerUI className={ classNames }>
 				<MainContentUI
 					className={ joinClasses( [ className, 'checkout__content' ] ) }
 					isLastStepActive={ false }
@@ -59,7 +66,7 @@ export function Checkout( { children, className } ) {
 	}
 
 	return (
-		<ContainerUI className={ joinClasses( [ className, 'composite-checkout' ] ) }>
+		<ContainerUI className={ classNames }>
 			<MainContentUI className={ joinClasses( [ className, 'checkout__content' ] ) }>
 				<CheckoutStepDataContext.Provider
 					value={ {
@@ -153,7 +160,7 @@ export function CheckoutStepArea( { children, className } ) {
 		activeStepNumber > totalSteps && totalSteps > 0 ? totalSteps : activeStepNumber;
 	const isThereAnotherNumberedStep = actualActiveStepNumber < totalSteps;
 	const onSubmitButtonLoadError = useCallback(
-		( error ) => onEvent( { type: 'SUBMIT_BUTTON_LOAD_ERROR', payload: error.message } ),
+		( error ) => onEvent( { type: 'SUBMIT_BUTTON_LOAD_ERROR', payload: error } ),
 		[ onEvent ]
 	);
 
@@ -288,7 +295,7 @@ export function CheckoutStep( {
 			onEvent( {
 				type: 'STEP_LOAD_ERROR',
 				payload: {
-					message: error.message,
+					message: error,
 					stepId,
 				},
 			} ),
@@ -366,8 +373,8 @@ export function CheckoutStepBody( {
 							? goToThisStep
 							: null
 					}
-					editButtonText={ editButtonText || 'Edit' }
-					editButtonAriaLabel={ editButtonAriaLabel || 'Edit this step' }
+					editButtonText={ editButtonText || __( 'Edit' ) }
+					editButtonAriaLabel={ editButtonAriaLabel || __( 'Edit this step' ) }
 				/>
 				<StepContentUI isVisible={ isStepActive } className="checkout-steps__step-content">
 					{ activeStepContent }
@@ -376,13 +383,13 @@ export function CheckoutStepBody( {
 							onClick={ goToNextStep }
 							value={
 								formStatus === 'validating'
-									? validatingButtonText || 'Please wait…'
-									: nextStepButtonText || 'Continue'
+									? validatingButtonText || __( 'Please wait…' )
+									: nextStepButtonText || __( 'Continue' )
 							}
 							ariaLabel={
 								formStatus === 'validating'
-									? validatingButtonAriaLabel || 'Please wait…'
-									: nextStepButtonAriaLabel || 'Continue to next step'
+									? validatingButtonAriaLabel || __( 'Please wait…' )
+									: nextStepButtonAriaLabel || __( 'Continue to next step' )
 							}
 							buttonType="primary"
 							disabled={ formStatus !== 'ready' }
@@ -407,6 +414,7 @@ CheckoutStepBody.propTypes = {
 	errorMessage: PropTypes.string,
 	onError: PropTypes.func,
 	editButtonAriaLabel: PropTypes.string,
+	editButtonText: PropTypes.string,
 	nextStepButtonText: PropTypes.string,
 	nextStepButtonAriaLabel: PropTypes.string,
 	isStepActive: PropTypes.bool.isRequired,
@@ -455,10 +463,15 @@ const CheckoutSummaryUI = styled.div`
 	}
 
 	@media ( ${ ( props ) => props.theme.breakpoints.desktopUp } ) {
-		margin-left: 24px;
 		margin-right: 0;
+		margin-left: 24px;
 		order: 2;
 		width: 328px;
+
+		.rtl & {
+			margin-right: 24px;
+			margin-left; 0;
+		}
 	}
 `;
 
@@ -498,6 +511,11 @@ const SubmitButtonWrapperUI = styled.div`
 
 	button {
 		width: ${ ( props ) => ( props.isLastStepActive ? 'calc( 100% - 60px )' : '100%' ) };
+	}
+
+	.rtl & {
+		right: 0;
+		left: auto;
 	}
 
 	@media ( ${ ( props ) => props.theme.breakpoints.tabletUp } ) {
@@ -586,7 +604,7 @@ function CheckoutStepHeader( {
 					className="checkout-step__edit-button"
 					buttonType="text-button"
 					onClick={ onEdit }
-					aria-label={ editButtonAriaLabel }
+					aria-label={ editButtonAriaLabel || __( 'Edit this step' ) }
 				>
 					{ editButtonText || __( 'Edit' ) }
 				</HeaderEditButton>
@@ -637,6 +655,11 @@ const StepTitle = styled.span`
 		props.isActive ? props.theme.weights.bold : props.theme.weights.normal };
 	margin-right: ${ ( props ) => ( props.fullWidth ? '0' : '8px' ) };
 	flex: ${ ( props ) => ( props.fullWidth ? '1' : 'inherit' ) };
+
+	.rtl & {
+		margin-right: 0;
+		margin-left: ${ ( props ) => ( props.fullWidth ? '0' : '8px' ) };
+	}
 `;
 
 const StepHeader = styled.h2`
@@ -652,6 +675,11 @@ const StepNumberOuterWrapper = styled.div`
 	width: 27px;
 	height: 27px;
 	margin-right: 8px;
+
+	.rtl & {
+		margin-right: 0;
+		margin-left: 8px;
+	}
 `;
 
 const StepNumberInnerWrapper = styled.div`
@@ -676,6 +704,12 @@ const StepNumber = styled.div`
 	top: 0;
 	left: 0;
 	backface-visibility: hidden;
+
+	.rtl & {
+		right: 0;
+		left: auto;
+	}
+
 	// Reason: The IE media query needs to not have spaces within brackets otherwise ie11 doesn't read them
 	// prettier-ignore
 	@media all and (-ms-high-contrast:none), (-ms-high-contrast:active) {
@@ -724,6 +758,11 @@ const StepContentUI = styled.div`
 	color: ${ ( props ) => props.theme.colors.textColor };
 	display: ${ ( props ) => ( props.isVisible ? 'block' : 'none' ) };
 	padding-left: 35px;
+
+	.rtl & {
+		padding-right: 35px;
+		padding-left: 0;
+	}
 `;
 
 const StepSummaryUI = styled.div`
@@ -731,6 +770,11 @@ const StepSummaryUI = styled.div`
 	font-size: 14px;
 	display: ${ ( props ) => ( props.isVisible ? 'block' : 'none' ) };
 	padding-left: 35px;
+
+	.rtl & {
+		padding-right: 35px;
+		padding-left: 0;
+	}
 `;
 
 function saveStepNumberToUrl( stepNumber ) {

@@ -86,7 +86,7 @@ export class List extends React.Component {
 					domains={ this.props.domains }
 					position="domain-list"
 					selectedSite={ this.props.selectedSite }
-					ruleWhiteList={ [
+					allowedRules={ [
 						'newDomainsWithPrimary',
 						'newDomains',
 						'unverifiedDomainsCanManage',
@@ -192,7 +192,7 @@ export class List extends React.Component {
 					<FormattedHeader
 						brandFont
 						className="domain-management__page-heading"
-						headerText={ this.props.translate( 'Domains' ) }
+						headerText={ this.props.translate( 'Site Domains' ) }
 						align="left"
 					/>
 				) }

@@ -84,6 +84,7 @@ import canSiteViewAtomicHosting from 'state/selectors/can-site-view-atomic-hosti
 import isSiteWPForTeams from 'state/selectors/is-site-wpforteams';
 import { getCurrentRoute } from 'state/selectors/get-current-route';
 import { isUnderDomainManagementAll } from 'my-sites/domains/paths';
+import { isUnderEmailManagementAll } from 'my-sites/email/paths';
 import JetpackSidebarMenuItems from 'components/jetpack/sidebar/menu-items/calypso';
 
 /**
@@ -132,13 +133,21 @@ export class MySitesSidebar extends Component {
 	}
 
 	cloud() {
-		const { scanState, rewindState, isCloudEligible, site } = this.props;
+		const {
+			scanState,
+			rewindState,
+			isCloudEligible,
+			site,
+			shouldRenderJetpackSection,
+		} = this.props;
 		if (
 			! site ||
 			! isCloudEligible ||
 			! scanState ||
 			! rewindState ||
-			'uninitialized' === rewindState.state
+			'uninitialized' === rewindState.state ||
+			// Sections are already present in the Jetpack menu
+			shouldRenderJetpackSection
 		) {
 			return null;
 		}
@@ -885,8 +894,6 @@ export class MySitesSidebar extends Component {
 					</ul>
 				</SidebarMenu>
 
-				{ this.props.shouldRenderJetpackSection && this.jetpack() }
-
 				{ this.props.siteId && <QuerySiteChecklist siteId={ this.props.siteId } /> }
 				<ExpandableSidebarMenu
 					onClick={ this.toggleSection( SIDEBAR_SECTION_SITE ) }
@@ -896,6 +903,8 @@ export class MySitesSidebar extends Component {
 				>
 					{ this.site() }
 				</ExpandableSidebarMenu>
+
+				{ this.props.shouldRenderJetpackSection && this.jetpack() }
 
 				{ ! ( isEnabled( 'signup/wpforteams' ) && this.props.isSiteWPForTeams ) && this.design() ? (
 					<ExpandableSidebarMenu
@@ -962,8 +971,10 @@ export class MySitesSidebar extends Component {
 
 function mapStateToProps( state ) {
 	const currentUser = getCurrentUser( state );
+	const currentRoute = getCurrentRoute( state );
 
-	const isAllDomainsView = isUnderDomainManagementAll( getCurrentRoute( state ) );
+	const isAllDomainsView =
+		isUnderDomainManagementAll( currentRoute ) || isUnderEmailManagementAll( currentRoute );
 
 	const selectedSiteId = isAllDomainsView ? null : getSelectedSiteId( state );
 	const isSingleSite = !! selectedSiteId || currentUser.site_count === 1;

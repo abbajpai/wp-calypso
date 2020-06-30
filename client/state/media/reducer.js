@@ -2,7 +2,7 @@
  * External dependencies
  */
 
-import { isEmpty, mapValues, omit, pickBy, without, isNil } from 'lodash';
+import { isEmpty, mapValues, omit, pickBy, without, isNil, merge } from 'lodash';
 /**
  * Internal dependencies
  */
@@ -10,20 +10,20 @@ import {
 	MEDIA_DELETE,
 	MEDIA_ERRORS_CLEAR,
 	MEDIA_ITEM_ERRORS_CLEAR,
+	MEDIA_ITEM_ERRORS_SET,
 	MEDIA_ITEM_CREATE,
+	MEDIA_ITEM_REQUEST,
 	MEDIA_ITEM_REQUEST_FAILURE,
 	MEDIA_ITEM_REQUEST_SUCCESS,
-	MEDIA_ITEM_REQUESTING,
 	MEDIA_LIBRARY_SELECTED_ITEMS_UPDATE,
 	MEDIA_RECEIVE,
+	MEDIA_REQUEST,
 	MEDIA_REQUEST_FAILURE,
 	MEDIA_REQUEST_SUCCESS,
-	MEDIA_REQUESTING,
 	MEDIA_SOURCE_CHANGE,
 } from 'state/action-types';
 import { combineReducers, withoutPersistence } from 'state/utils';
 import MediaQueryManager from 'lib/query-manager/media';
-import { validateMediaItem } from 'lib/media/utils';
 import { ValidationErrors as MediaValidationErrors } from 'lib/media/constants';
 import { transformSite as transformSiteTransientItems } from 'state/media/utils/transientItems';
 
@@ -44,28 +44,14 @@ const isMediaError = ( action ) =>
  */
 export const errors = ( state = {}, action ) => {
 	switch ( action.type ) {
-		case MEDIA_ITEM_CREATE: {
-			if ( ! action.site || ! action.transientMedia ) {
-				return state;
-			}
-
-			const items = Array.isArray( action.transientMedia )
-				? action.transientMedia
-				: [ action.transientMedia ];
-			const mediaErrors = items.reduce( function ( memo, item ) {
-				const itemErrors = validateMediaItem( action.site, item );
-				if ( itemErrors.length ) {
-					memo[ item.ID ] = itemErrors;
-				}
-
-				return memo;
-			}, {} );
+		case MEDIA_ITEM_ERRORS_SET: {
+			const { siteId, mediaId, errors: mediaItemErrors } = action;
 
 			return {
 				...state,
-				[ action.site.ID ]: {
-					...state[ action.site.ID ],
-					...mediaErrors,
+				[ siteId ]: {
+					...state[ siteId ],
+					[ mediaId ]: mediaItemErrors,
 				},
 			};
 		}
@@ -196,7 +182,7 @@ export const queries = ( () => {
 
 export const queryRequests = withoutPersistence( ( state = {}, action ) => {
 	switch ( action.type ) {
-		case MEDIA_REQUESTING: {
+		case MEDIA_REQUEST: {
 			const { siteId, query } = action;
 			return {
 				...state,
@@ -218,46 +204,6 @@ export const queryRequests = withoutPersistence( ( state = {}, action ) => {
 			return {
 				...state,
 				[ siteId ]: omit( state[ siteId ], MediaQueryManager.QueryKey.stringify( query ) ),
-			};
-		}
-	}
-
-	return state;
-} );
-
-/**
- * Returns the updated site post requests state after an action has been
- * dispatched. The state reflects a mapping of site ID, post ID pairing to a
- * boolean reflecting whether a request for the post is in progress.
- *
- * @param  {object} state  Current state
- * @param  {object} action Action payload
- * @returns {object}        Updated state
- */
-export const mediaItemRequests = withoutPersistence( ( state = {}, action ) => {
-	switch ( action.type ) {
-		case MEDIA_ITEM_REQUESTING: {
-			const { siteId, mediaId } = action;
-			return {
-				...state,
-				[ siteId ]: {
-					...state[ siteId ],
-					[ mediaId ]: true,
-				},
-			};
-		}
-		case MEDIA_ITEM_REQUEST_SUCCESS: {
-			const { siteId, mediaId } = action;
-			return {
-				...state,
-				[ siteId ]: omit( state[ siteId ], mediaId ),
-			};
-		}
-		case MEDIA_ITEM_REQUEST_FAILURE: {
-			const { siteId, mediaId } = action;
-			return {
-				...state,
-				[ siteId ]: omit( state[ siteId ], mediaId ),
 			};
 		}
 	}
@@ -477,10 +423,72 @@ export const transientItems = withoutPersistence(
 	}
 );
 
+/**
+ * Returns the updated site post requests state after an action has been
+ * dispatched. The state reflects a mapping of site ID, media ID pairing to a
+ * boolean reflecting whether a request for the media item is in progress.
+ *
+ * @param  {object} state  Current state
+ * @param  {object} action Action payload
+ * @returns {object}        Updated state
+ */
+export const fetching = withoutPersistence( ( state = {}, action ) => {
+	switch ( action.type ) {
+		case MEDIA_REQUEST: {
+			const siteId = action.siteId;
+
+			return {
+				...state,
+				[ siteId ]: Object.assign( {}, state[ siteId ], {
+					nextPage: true,
+				} ),
+			};
+		}
+
+		case MEDIA_REQUEST_SUCCESS:
+		case MEDIA_REQUEST_FAILURE: {
+			const siteId = action.siteId;
+
+			return {
+				...state,
+				[ siteId ]: Object.assign( {}, state[ siteId ], {
+					nextPage: false,
+				} ),
+			};
+		}
+
+		case MEDIA_ITEM_REQUEST: {
+			const { siteId, mediaId } = action;
+
+			return {
+				...state,
+				[ siteId ]: merge( {}, state[ siteId ], {
+					items: {
+						[ mediaId ]: true,
+					},
+				} ),
+			};
+		}
+
+		case MEDIA_ITEM_REQUEST_SUCCESS:
+		case MEDIA_ITEM_REQUEST_FAILURE: {
+			const { siteId, mediaId } = action;
+
+			return {
+				...state,
+				[ siteId ]: omit( state[ siteId ], [ `items[${ mediaId }]` ] ),
+			};
+		}
+	}
+
+	return state;
+} );
+
 export default combineReducers( {
 	errors,
 	queries,
 	queryRequests,
-	mediaItemRequests,
 	selectedItems,
+	transientItems,
+	fetching,
 } );

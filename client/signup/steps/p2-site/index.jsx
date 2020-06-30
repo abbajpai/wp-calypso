@@ -34,6 +34,7 @@ const debug = debugFactory( 'calypso:steps:p2-site' );
  */
 const VALIDATION_DELAY_AFTER_FIELD_CHANGES = 1500;
 const ERROR_CODE_MISSING_SITE_TITLE = 123; // Random number, we don't need it.
+const ERROR_CODE_MISSING_SITE = 321; // Random number, we don't need it.
 
 /**
  * Module variables
@@ -94,7 +95,7 @@ class P2Site extends React.Component {
 	sanitize = ( fields, onComplete ) => {
 		const sanitizedSubdomain = this.sanitizeSubdomain( fields.site );
 		if ( fields.site !== sanitizedSubdomain ) {
-			onComplete( { site: sanitizedSubdomain } );
+			onComplete( { site: sanitizedSubdomain, siteTitle: fields.siteTitle } );
 		}
 	};
 
@@ -106,6 +107,12 @@ class P2Site extends React.Component {
 				[ ERROR_CODE_MISSING_SITE_TITLE ]: this.props.translate(
 					'Please enter your team or project name.'
 				),
+			};
+		}
+
+		if ( isEmpty( fields.site ) ) {
+			messages.site = {
+				[ ERROR_CODE_MISSING_SITE ]: this.props.translate( 'Please enter your site address.' ),
 			};
 		}
 

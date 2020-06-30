@@ -48,7 +48,7 @@ import { fetchPaymentCountries } from 'state/countries/actions';
 import { StateSelect } from 'my-sites/domains/components/form';
 import ManagedContactDetailsFormFields from 'components/domains/contact-details-form-fields/managed-contact-details-form-fields';
 import { getPlan } from 'lib/plans';
-import { getTld } from 'lib/domains';
+import { getTopLevelOfTld } from 'lib/domains';
 import PageViewTracker from 'lib/analytics/page-view-tracker';
 import { useStripe } from 'lib/stripe';
 import CheckoutTerms from '../checkout/checkout-terms.jsx';
@@ -61,7 +61,7 @@ import {
 	fullCreditsProcessor,
 	existingCardProcessor,
 	payPalProcessor,
-	idealProcessor,
+	genericRedirectProcessor,
 } from './payment-method-processors';
 import { useGetThankYouUrl } from './use-get-thank-you-url';
 import createAnalyticsEventHandler from './record-analytics';
@@ -325,7 +325,11 @@ export default function CompositeCheckout( {
 
 	useDisplayErrors( errors, showErrorMessage );
 
-	const itemsForCheckout = ( items.length ? [ ...items, tax, couponItem ] : [] ).filter( Boolean );
+	const isFullCredits = credits?.amount.value > 0 && credits?.amount.value >= subtotal.amount.value;
+	const itemsForCheckout = ( items.length
+		? [ ...items, tax, couponItem, ...( isFullCredits ? [] : [ credits ] ) ]
+		: []
+	).filter( Boolean );
 	debug( 'items for checkout', itemsForCheckout );
 
 	useRedirectIfCartEmpty( items, `/plans/${ siteSlug || '' }`, isLoadingCart );
@@ -385,7 +389,7 @@ export default function CompositeCheckout( {
 			! hasDomainRegistration( responseCart ) &&
 			! hasTransferProduct( responseCart );
 		const getIsFieldDisabled = () => isDisabled;
-		const tlds = getAllTlds( domainNames );
+		const tlds = getAllTopLevelTlds( domainNames );
 
 		return (
 			<React.Fragment>
@@ -471,8 +475,10 @@ export default function CompositeCheckout( {
 			'apple-pay': applePayProcessor,
 			'free-purchase': freePurchaseProcessor,
 			card: stripeCardProcessor,
+			giropay: ( transactionData ) =>
+				genericRedirectProcessor( 'giropay', transactionData, getThankYouUrl, isWhiteGloveOffer ),
 			ideal: ( transactionData ) =>
-				idealProcessor( transactionData, getThankYouUrl, isWhiteGloveOffer ),
+				genericRedirectProcessor( 'ideal', transactionData, getThankYouUrl, isWhiteGloveOffer ),
 			'full-credits': fullCreditsProcessor,
 			'existing-card': existingCardProcessor,
 			paypal: ( transactionData ) =>
@@ -750,8 +756,8 @@ function getAnalyticsPath( purchaseId, product, selectedSiteSlug, selectedFeatur
 	return { analyticsPath, analyticsProps };
 }
 
-function getAllTlds( domainNames ) {
-	return Array.from( new Set( domainNames.map( getTld ) ) ).sort();
+function getAllTopLevelTlds( domainNames ) {
+	return Array.from( new Set( domainNames.map( getTopLevelOfTld ) ) ).sort();
 }
 
 function displayRenewalSuccessNotice( responseCart, purchases, translate, moment ) {

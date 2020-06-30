@@ -128,16 +128,6 @@ export default {
 		localeTargets: [ 'en' ],
 		countryCodeTargets: [ 'US', 'ID', 'NG', 'BD', 'NL', 'SE', 'SG', 'LK', 'NZ', 'IE', 'CA', 'AU' ],
 	},
-	domainShowJPResultsInJapan: {
-		datestamp: '20200506',
-		variations: {
-			variantShowJPResults: 50,
-			control: 50,
-		},
-		defaultVariation: 'control',
-		localeTargets: 'any',
-		countryCodeTargets: [ 'JP' ],
-	},
 	[ RUM_DATA_COLLECTION.AB_NAME ]: {
 		datestamp: '20200602',
 		variations: {
@@ -173,15 +163,6 @@ export default {
 		variations: {
 			variantShowPlanBump: 50,
 			control: 50,
-		},
-		defaultVariation: 'control',
-		allowExistingUsers: true,
-	},
-	jetpackSidebarSection: {
-		datestamp: '20200622',
-		variations: {
-			showJetpackSidebarSection: 0,
-			control: 100,
 		},
 		defaultVariation: 'control',
 		allowExistingUsers: true,

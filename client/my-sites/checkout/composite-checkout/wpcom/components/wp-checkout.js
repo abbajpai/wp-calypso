@@ -44,6 +44,7 @@ import {
 	getDomainValidationResult,
 	getGSuiteValidationResult,
 } from 'my-sites/checkout/composite-checkout/contact-validation';
+import { isGSuiteProductSlug } from 'lib/gsuite';
 
 const debug = debugFactory( 'calypso:wp-checkout' );
 
@@ -52,8 +53,8 @@ const ContactFormTitle = () => {
 	const isActive = useIsStepActive();
 	const isComplete = useIsStepComplete();
 	const [ items ] = useLineItems();
-	const isGSuiteInCart = items.some(
-		( item ) => !! item.wpcom_meta?.extra?.google_apps_users?.length
+	const isGSuiteInCart = items.some( ( item ) =>
+		isGSuiteProductSlug( item.wpcom_meta?.product_slug )
 	);
 
 	if ( areDomainsInLineItems( items ) ) {
@@ -110,8 +111,8 @@ export default function WPCheckout( {
 	const [ items ] = useLineItems();
 	const firstDomainItem = items.find( isLineItemADomain );
 	const isDomainFieldsVisible = !! firstDomainItem;
-	const isGSuiteInCart = items.some(
-		( item ) => !! item.wpcom_meta?.extra?.google_apps_users?.length
+	const isGSuiteInCart = items.some( ( item ) =>
+		isGSuiteProductSlug( item.wpcom_meta?.product_slug )
 	);
 	const shouldShowContactStep = isDomainFieldsVisible || total.amount.value > 0;
 
@@ -200,6 +201,18 @@ export default function WPCheckout( {
 
 	useUpdateCartLocationWhenPaymentMethodChanges( activePaymentMethod, updateCartContactDetails );
 
+	const onReviewError = useCallback(
+		( error ) =>
+			onEvent( {
+				type: 'STEP_LOAD_ERROR',
+				payload: {
+					message: error,
+					stepId: 'review',
+				},
+			} ),
+		[ onEvent ]
+	);
+
 	return (
 		<Checkout>
 			<CheckoutSummaryArea className={ isSummaryVisible ? 'is-visible' : '' }>
@@ -220,6 +233,7 @@ export default function WPCheckout( {
 			</CheckoutSummaryArea>
 			<CheckoutStepArea>
 				<CheckoutStepBody
+					onError={ onReviewError }
 					className="wp-checkout__review-order-step"
 					stepId="review-order-step"
 					isStepActive={ isOrderReviewActive }
@@ -343,6 +357,10 @@ const CheckoutSummaryTitleLink = styled.button`
 	padding: 20px 23px 20px 14px;
 	width: 100%;
 
+	.rtl & {
+		padding: 20px 14px 20px 23px;
+	}
+
 	.is-visible & {
 		border-bottom: none;
 	}
@@ -363,6 +381,11 @@ const CheckoutSummaryTitle = styled.span`
 
 const CheckoutSummaryTitleIcon = styled( Gridicon )`
 	margin-right: 4px;
+
+	.rtl & {
+		margin-right: 0;
+		margin-left: 4px;
+	}
 `;
 
 const CheckoutSummaryTitleToggle = styled( MaterialIcon )`
@@ -372,6 +395,11 @@ const CheckoutSummaryTitleToggle = styled( MaterialIcon )`
 	width: 18px;
 	height: 18px;
 	vertical-align: bottom;
+
+	.rtl & {
+		margin-right: 0;
+		margin-left: 4px;
+	}
 
 	.is-visible & {
 		transform: rotate( 180deg );
@@ -430,8 +458,16 @@ const CheckoutTermsUI = styled.div`
 		position: relative;
 	}
 
-	& div:first-of-type {
+	.rtl & > * {
+		margin: 16px -24px 16px 0;
+		padding-right: 24px;
 		padding-left: 0;
+	}
+
+	& div:first-of-type {
+		padding-right: 0;
+		padding-left: 0;
+		margin-right: 0;
 		margin-left: 0;
 		margin-top: 32px;
 	}
@@ -442,6 +478,11 @@ const CheckoutTermsUI = styled.div`
 		position: absolute;
 		top: 0;
 		left: 0;
+
+		.rtl & {
+			left: auto;
+			right: 0;
+		}
 	}
 
 	p {

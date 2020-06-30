@@ -19,19 +19,14 @@ import FormLabel from 'components/forms/form-label';
 import getMediaLibrarySelectedItems from 'state/selectors/get-media-library-selected-items';
 import Image from 'components/image';
 import MediaStore from 'lib/media/store';
-import { isItemBeingUploaded } from 'lib/media/utils';
-import MediaActions from 'lib/media/actions';
-import { receiveMedia, deleteMedia } from 'state/media/actions';
+import { addMedia } from 'state/media/thunks';
 import { getSelectedSiteId, getSelectedSite } from 'state/ui/selectors';
-import { resetAllImageEditorState } from 'state/ui/editor/image-editor/actions';
-import {
-	getImageEditorCrop,
-	getImageEditorTransform,
-} from 'state/ui/editor/image-editor/selectors';
-import { setEditorMediaModalView } from 'state/ui/editor/actions';
+import { resetAllImageEditorState } from 'state/editor/image-editor/actions';
+import { getImageEditorCrop, getImageEditorTransform } from 'state/editor/image-editor/selectors';
+import { setEditorMediaModalView } from 'state/editor/actions';
 import { ModalViews } from 'state/ui/media-modal/constants';
 import resizeImageUrl from 'lib/resize-image-url';
-import { AspectRatios } from 'state/ui/editor/image-editor/constants';
+import { AspectRatios } from 'state/editor/image-editor/constants';
 import Spinner from 'components/spinner';
 
 /**
@@ -54,6 +49,7 @@ class PodcastCoverImageSetting extends PureComponent {
 		onSelect: PropTypes.func,
 		onUploadStateChange: PropTypes.func,
 		isDisabled: PropTypes.bool,
+		addMedia: PropTypes.func,
 	};
 
 	state = {
@@ -86,9 +82,7 @@ class PodcastCoverImageSetting extends PureComponent {
 		}
 	};
 
-	uploadCoverImage( blob, fileName ) {
-		const { siteId, site } = this.props;
-
+	async uploadCoverImage( blob, fileName ) {
 		// Upload media using a manually generated ID so that we can continue
 		// to reference it within this function
 		const transientMediaId = uniqueId( 'podcast-cover-image' );
@@ -96,43 +90,19 @@ class PodcastCoverImageSetting extends PureComponent {
 		this.setState( { transientMediaId } );
 		this.onUploadStateChange( true );
 
-		const checkUploadComplete = () => {
-			// MediaStore tracks pointers from transient media to the persisted
-			// copy, so if our request is for a media which is not transient,
-			// we can assume the upload has finished.
-			const media = MediaStore.get( siteId, transientMediaId );
-			const isUploadInProgress = media && isItemBeingUploaded( media );
-			const isFailedUpload = ! media;
-
-			if ( isFailedUpload ) {
-				this.props.deleteMedia( siteId, transientMediaId );
-			} else {
-				this.props.receiveMedia( siteId, media );
-			}
-
-			if ( isUploadInProgress ) {
-				return;
-			}
-
-			MediaStore.off( 'change', checkUploadComplete );
-
-			if ( ! isFailedUpload ) {
-				debug( 'upload media', media );
-				this.props.onSelect( media.ID, media.URL );
-			}
-
+		try {
+			const uploadedMedia = await this.props.addMedia( this.props.site, {
+				ID: transientMediaId,
+				fileContents: blob,
+				fileName,
+			} );
+			debug( 'upload media', uploadedMedia );
+			this.props.onSelect( uploadedMedia.ID, uploadedMedia.URL );
+		} finally {
 			// Remove transient image so that new image shows or if failed upload, the prior image
 			this.setState( { transientMediaId: null } );
 			this.onUploadStateChange( false );
-		};
-
-		MediaStore.on( 'change', checkUploadComplete );
-
-		MediaActions.add( site, {
-			ID: transientMediaId,
-			fileContents: blob,
-			fileName,
-		} );
+		}
 	}
 
 	onUploadStateChange = ( isUploading ) => {
@@ -331,7 +301,6 @@ export default connect(
 		resetAllImageEditorState,
 		onEditSelectedMedia: partial( setEditorMediaModalView, ModalViews.IMAGE_EDITOR ),
 		onCancelEditingCoverImage: partial( setEditorMediaModalView, ModalViews.LIST ),
-		receiveMedia,
-		deleteMedia,
+		addMedia,
 	}
 )( localize( PodcastCoverImageSetting ) );

@@ -12,7 +12,6 @@ import actionLog from './action-log/reducer';
 import checkout from './checkout/reducer';
 import comments from './comments/reducer';
 import dropZone from './drop-zone/reducer';
-import editor from './editor/reducer';
 import guidedTour from './guided-tours/reducer';
 import editorDeprecationDialog from './editor-deprecation-dialog/reducer';
 import gutenbergOptInDialog from './gutenberg-opt-in-dialog/reducer';
@@ -22,7 +21,6 @@ import masterbarVisibility from './masterbar-visibility/reducer';
 import mediaModal from './media-modal/reducer';
 import npsSurveyNotice from './nps-survey-notice/reducer';
 import oauth2Clients from './oauth2-clients/reducer';
-import payment from './payment/reducer';
 import postTypeList from './post-type-list/reducer';
 import preview from './preview/reducer';
 import section from './section/reducer';
@@ -99,7 +97,6 @@ const reducer = combineReducers( {
 	checkout,
 	comments,
 	dropZone,
-	editor,
 	editorDeprecationDialog,
 	guidedTour,
 	gutenbergOptInDialog,
@@ -113,7 +110,6 @@ const reducer = combineReducers( {
 	mediaModal,
 	npsSurveyNotice,
 	oauth2Clients,
-	payment,
 	postTypeList,
 	preview,
 	section,

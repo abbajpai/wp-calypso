@@ -33,6 +33,7 @@ import isPresalesChatAvailable from 'state/happychat/selectors/is-presales-chat-
 import isHappychatAvailable from 'state/happychat/selectors/is-happychat-available';
 import QuerySupportTypes from 'blocks/inline-help/inline-help-query-support-types';
 import isSupportVariationDetermined from 'state/selectors/is-support-variation-determined';
+import { isEnabled } from 'config';
 
 export default function WPCheckoutOrderSummary() {
 	const translate = useTranslate();
@@ -189,7 +190,9 @@ function getPlanFeatures( plan, translate, hasDomainsInCart, hasRenewalInCart ) 
 		return [
 			showFreeDomainFeature && translate( 'Free domain for one year' ),
 			translate( 'Unlimited access to our library of Premium Themes' ),
-			translate( 'Subscriber-only content and simple payment buttons' ),
+			isEnabled( 'earn/pay-with-paypal' )
+				? translate( 'Subscriber-only content and Pay with PayPal buttons' )
+				: translate( 'Subscriber-only content and payment buttons' ),
 			translate( 'Track your stats with Google Analytics' ),
 		];
 	} else if (
@@ -335,6 +338,10 @@ const CheckoutSummaryHelpButton = styled.button`
 	margin-top: 16px;
 	text-align: left;
 
+	.rtl & {
+		text-align: right;
+	}
+
 	span {
 		cursor: pointer;
 		text-decoration: underline;
@@ -351,12 +358,24 @@ const WPCheckoutCheckIcon = styled( CheckoutCheckIcon )`
 	position: absolute;
 	top: 0;
 	left: 0;
+
+	.rtl & {
+		margin-right: 0;
+		margin-left: 4px;
+		right: 0;
+		left: auto;
+	}
 `;
 
 const CheckoutSummaryFeaturesListItem = styled.li`
 	margin-bottom: 4px;
 	padding-left: 24px;
 	position: relative;
+
+	.rtl & {
+		padding-right: 24px;
+		padding-left: 0;
+	}
 `;
 
 const CheckoutSummaryAmountWrapper = styled.div`
@@ -394,7 +413,7 @@ const LoadingCopy = styled.p`
 	padding: 0;
 	position: relative;
 
-	:before {
+	::before {
 		content: '';
 		display: block;
 		position: absolute;
@@ -405,12 +424,21 @@ const LoadingCopy = styled.p`
 		background: ${ ( props ) => props.theme.colors.borderColorLight };
 		border-radius: 100%;
 	}
+
+	.rtl & {
+		margin: 8px 26px 0 0;
+
+		::before {
+			right: -26px;
+			left: auto;
+		}
+	}
 `;
 
 const LoadingButton = styled( LoadingCopy )`
 	margin: 16px 8px 0;
 
-	:before {
+	::before {
 		display: none;
 	}
 `;
