@@ -19,6 +19,8 @@ import getInlineHelpSearchResultsForQuery from 'state/inline-help/selectors/get-
 import getSelectedResultIndex from 'state/inline-help/selectors/get-selected-result-index';
 import isRequestingInlineHelpSearchResultsForQuery from 'state/inline-help/selectors/is-requesting-inline-help-search-results-for-query';
 import hasInlineHelpAPIResults from 'state/selectors/has-inline-help-api-results';
+import { getSiteSlug } from 'state/sites/selectors';
+import { getSelectedSiteId } from 'state/ui/selectors';
 import { selectResult } from 'state/inline-help/actions';
 import { localizeUrl } from 'lib/i18n-utils';
 
@@ -97,6 +99,7 @@ export default connect(
 		isSearching: isRequestingInlineHelpSearchResultsForQuery( state, ownProps.searchQuery ),
 		selectedResultIndex: getSelectedResultIndex( state ),
 		hasAPIResults: hasInlineHelpAPIResults( state ),
+		siteSlug: getSiteSlug( state, getSelectedSiteId( state ) ),
 	} ),
 	{
 		recordTracksEvent,
