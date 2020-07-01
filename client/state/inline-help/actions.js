@@ -1,4 +1,9 @@
 /**
+ * External dependencies
+ */
+import { map } from 'lodash';
+
+/**
  * Internal dependencies
  */
 import wpcom from 'lib/wp';
@@ -21,6 +26,9 @@ import {
 } from 'state/action-types';
 
 import getContextualHelpResults from 'state/inline-help/selectors/get-contextual-help-results';
+import getAdminHelpResults from 'state/inline-help/selectors/get-admin-help-results';
+import { getSiteSlug } from 'state/sites/selectors';
+import { getSelectedSiteId } from 'state/ui/selectors';
 import 'state/inline-help/init';
 
 /**
@@ -47,7 +55,10 @@ export function setInlineHelpSearchQuery( searchQuery = '' ) {
  */
 export function requestInlineHelpSearchResults( searchQuery = '' ) {
 	return ( dispatch, getState ) => {
-		const contextualResults = getContextualHelpResults( getState() );
+		const state = getState();
+		const siteSlug = getSiteSlug( state, getSelectedSiteId( state ) );
+		const contextualResults = map( getContextualHelpResults( state ), item => ( { ...item, type: 'contextual_help' } ) );
+		const helpAdminResults = map( getAdminHelpResults(state, searchQuery, siteSlug ), item => ( { ...item, type: 'admin_help' } ) );
 
 		// Ensure empty strings are removed as valid searches.
 		searchQuery = searchQuery.trim();
@@ -94,7 +105,11 @@ export function requestInlineHelpSearchResults( searchQuery = '' ) {
 				dispatch( {
 					type: INLINE_HELP_SEARCH_REQUEST_SUCCESS,
 					searchQuery,
-					searchResults: hasAPIResults ? searchResults : contextualResults,
+					searchResults: [
+						...searchResults,
+						...contextualResults,
+						...helpAdminResults,
+					]
 				} );
 			} )
 			.catch( ( error ) => {

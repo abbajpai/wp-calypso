@@ -3,10 +3,11 @@
  */
 import React from 'react';
 import PropTypes from 'prop-types';
-import { identity, isEmpty } from 'lodash';
+import { identity, isEmpty, filter } from 'lodash';
 import { connect } from 'react-redux';
 import { localize } from 'i18n-calypso';
 import classNames from 'classnames';
+import Gridicon from 'gridicons';
 
 /**
  * Internal Dependencies
@@ -19,9 +20,6 @@ import getInlineHelpSearchResultsForQuery from 'state/inline-help/selectors/get-
 import getSelectedResultIndex from 'state/inline-help/selectors/get-selected-result-index';
 import isRequestingInlineHelpSearchResultsForQuery from 'state/inline-help/selectors/is-requesting-inline-help-search-results-for-query';
 import hasInlineHelpAPIResults from 'state/selectors/has-inline-help-api-results';
-import getAdminHelpResults from 'state/inline-help/selectors/get-admin-help-results';
-import { getSiteSlug } from 'state/sites/selectors';
-import { getSelectedSiteId } from 'state/ui/selectors';
 import { selectResult } from 'state/inline-help/actions';
 import { localizeUrl } from 'lib/i18n-utils';
 
@@ -31,11 +29,12 @@ function HelpSearchResults( {
 	openResult,
 	searchQuery = '',
 	searchResults,
+	adminHelpResults,
+	contextualHelp,
 	selectedResultIndex = -1,
 	selectSearchResult,
 	translate = identity,
 	placeholderLines,
-	siteSlug,
 } ) {
 	const selectResultHandler = ( selectionIndex ) => ( event ) => {
 		const selectedResult = searchResults?.[ selectionIndex ] ?? null;
@@ -43,7 +42,8 @@ function HelpSearchResults( {
 		openResult( event, selectedResult );
 	};
 
-	const renderHelpLink = ( { link, key, description, title }, index ) => {
+	const renderHelpLink = ( offset ) => ( { link, key, description, title, icon }, i ) => {
+		const index = offset + i;
 		const classes = classNames( 'inline-help__results-item', {
 			'is-selected': selectedResultIndex === index,
 		} );
@@ -55,6 +55,7 @@ function HelpSearchResults( {
 					onClick={ selectResultHandler( index ) }
 					title={ decodeEntities( description ) }
 				>
+					{ icon && <Gridicon icon={ icon } size={ 18 } /> }
 					{ preventWidows( decodeEntities( title ) ) }
 				</a>
 			</li>
@@ -67,34 +68,33 @@ function HelpSearchResults( {
 			return <PlaceholderLines lines={ placeholderLines } />;
 		}
 
+		if ( ! hasAPIResults ) {
+			return (
+				<>
+					{ ! isEmpty( searchQuery ) && (
+						<p className="inline-help__empty-results">{ translate( 'No results.' ) }</p>
+					) }
+					<ul className="inline-help__results-list">
+						{ contextualHelp.map( renderHelpLink( 0 ) ) }
+					</ul>
+				</>
+			);
+		}
+
 		return (
 			<>
 				{ ! isEmpty( searchQuery ) && ! hasAPIResults && (
 					<p className="inline-help__empty-results">{ translate( 'No results.' ) }</p>
 				) }
-				<ul className="inline-help__results-list">{ searchResults.map( renderHelpLink ) }</ul>
-			</>
-		);
-	};
-
-	const renderAdminHelpResults = () => {
-		if ( ! searchQuery ) {
-			return null;
-		}
-
-		const results = getAdminHelpResults( searchQuery, siteSlug );
-		if ( ! results?.length ) {
-			return null;
-		}
-
-		return (
-			<div className="inline-help__find-section">
-				<h2 className="inline-help__view-heading">{
-					translate( 'Show me where I can:' )
-				}</h2>
 				<ul className="inline-help__results-list">
+					{ searchResults.map( renderHelpLink( 0 ) ) }
 				</ul>
-			</div>
+
+				<h2 className="inline-help__view-heading">{ translate( 'Show me where I can:' ) }</h2>
+				<ul className="inline-help__results-list">
+					{ adminHelpResults.map( renderHelpLink( searchResults.length ) ) }
+				</ul>
+			</>
 		);
 	};
 
@@ -104,6 +104,7 @@ function HelpSearchResults( {
 			{ renderSearchResults() }
 			{ renderAdminHelpResults() }
 		</>
+
 	);
 }
 
@@ -113,17 +114,29 @@ HelpSearchResults.propTypes = {
 	openResult: PropTypes.func.isRequired,
 	hasAPIResults: PropTypes.bool,
 	searchResults: PropTypes.array,
+	adminHelpResults: PropTypes.array,
+	contextualHelp: PropTypes.array,
 	selectedResultIndex: PropTypes.number,
 	isSearching: PropTypes.bool,
 };
 
 export default connect(
 	( state, ownProps ) => ( {
-		searchResults: getInlineHelpSearchResultsForQuery( state ),
+		searchResults: filter(
+			getInlineHelpSearchResultsForQuery( state, ownProps.searchQuery ),
+			item => typeof item.type === 'undefined'
+		),
+		adminHelpResults: filter(
+			getInlineHelpSearchResultsForQuery( state, ownProps.searchQuery ),
+			item => item && item.type === 'admin_help'
+		),
+		contextualHelp: filter(
+			getInlineHelpSearchResultsForQuery( state, ownProps.searchQuery ),
+			item => item && item.type === 'contextual_help'
+		),
 		isSearching: isRequestingInlineHelpSearchResultsForQuery( state, ownProps.searchQuery ),
 		selectedResultIndex: getSelectedResultIndex( state ),
 		hasAPIResults: hasInlineHelpAPIResults( state ),
-		siteSlug: getSiteSlug( state, getSelectedSiteId( state ) ),
 	} ),
 	{
 		recordTracksEvent,
