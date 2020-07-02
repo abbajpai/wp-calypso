@@ -102,9 +102,7 @@ function HelpSearchResults( {
 		<>
 			<QueryInlineHelpSearch query={ searchQuery } />
 			{ renderSearchResults() }
-			{ renderAdminHelpResults() }
 		</>
-
 	);
 }
 
