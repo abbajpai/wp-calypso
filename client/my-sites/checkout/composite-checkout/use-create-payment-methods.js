@@ -4,8 +4,6 @@
 import React, { useMemo } from 'react';
 import {
 	createPayPalMethod,
-	createStripePaymentMethodStore,
-	createStripeMethod,
 	createGiropayMethod,
 	createGiropayPaymentMethodStore,
 	createIdealMethod,
@@ -27,6 +25,10 @@ import {
 	WordPressFreePurchaseLabel,
 	WordPressFreePurchaseSummary,
 } from './payment-method-helpers';
+import {
+	createCreditCardPaymentMethodStore,
+	createCreditCardMethod,
+} from './payment-methods/credit-card';
 
 function useCreatePayPal( { onlyLoadPaymentMethods } ) {
 	const shouldLoadPayPalMethod = onlyLoadPaymentMethods
@@ -41,7 +43,7 @@ function useCreatePayPal( { onlyLoadPaymentMethods } ) {
 	return paypalMethod;
 }
 
-function useCreateStripe( {
+function useCreateCreditCard( {
 	onlyLoadPaymentMethods,
 	isStripeLoading,
 	stripeLoadingError,
@@ -53,11 +55,11 @@ function useCreateStripe( {
 		? onlyLoadPaymentMethods.includes( 'card' )
 		: true;
 	const shouldLoadStripeMethod = isStripeMethodAllowed && ! isStripeLoading && ! stripeLoadingError;
-	const stripePaymentMethodStore = useMemo( () => createStripePaymentMethodStore(), [] );
+	const stripePaymentMethodStore = useMemo( () => createCreditCardPaymentMethodStore(), [] );
 	const stripeMethod = useMemo(
 		() =>
 			shouldLoadStripeMethod
-				? createStripeMethod( {
+				? createCreditCardMethod( {
 						store: stripePaymentMethodStore,
 						stripe,
 						stripeConfiguration,
@@ -281,7 +283,7 @@ export default function useCreatePaymentMethods( {
 		stripe,
 	} );
 
-	const stripeMethod = useCreateStripe( {
+	const stripeMethod = useCreateCreditCard( {
 		onlyLoadPaymentMethods,
 		isStripeLoading,
 		stripeLoadingError,
