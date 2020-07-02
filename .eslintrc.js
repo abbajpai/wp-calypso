@@ -177,7 +177,10 @@ module.exports = {
 		// - path because we use it quite a bit
 		'import/no-nodejs-modules': [ 'error', { allow: [ 'url', 'events', 'path', 'config' ] } ],
 
-		// temporarily demote inclusive language rule to a warning until we clear the repository
-		'inclusive-language/use-inclusive-words': 'warn',
+		/**
+		 * temporarily demote inclusive language rule to a warning until we clear the repository
+		 * and allow certain terms that we can't fix yet due to complexity
+		 */
+		'inclusive-language/use-inclusive-words': [ 'warn', './inclusive-language.config.json' ],
 	},
 };
