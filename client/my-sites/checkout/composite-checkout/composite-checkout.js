@@ -12,7 +12,6 @@ import {
 	WPCheckout,
 	useWpcomStore,
 	useShoppingCart,
-	FormFieldAnnotation,
 	areDomainsInLineItems,
 	emptyManagedContactDetails,
 	applyContactDetailsRequiredMask,
@@ -41,10 +40,7 @@ import {
 	requestContactDetailsCache,
 	updateContactDetailsCache,
 } from 'state/domains/management/actions';
-import { FormCountrySelect } from 'components/forms/form-country-select';
 import RegistrantExtraInfoForm from 'components/domains/registrant-extra-info';
-import getCountries from 'state/selectors/get-countries';
-import { fetchPaymentCountries } from 'state/countries/actions';
 import { StateSelect } from 'my-sites/domains/components/form';
 import ManagedContactDetailsFormFields from 'components/domains/contact-details-form-fields/managed-contact-details-form-fields';
 import { getPlan } from 'lib/plans';
@@ -89,6 +85,7 @@ import { useLocalizedMoment } from 'components/localized-moment';
 import isDomainOnlySite from 'state/selectors/is-domain-only-site';
 import { retrieveSignupDestination, clearSignupDestinationCookie } from 'signup/utils';
 import { useWpcomProductVariants } from './wpcom/hooks/product-variants';
+import useCountryList from './wpcom/hooks/use-country-list';
 
 const debug = debugFactory( 'calypso:composite-checkout' );
 
@@ -534,7 +531,6 @@ export default function CompositeCheckout( {
 					changePlanLength={ changeItemVariant }
 					siteId={ siteId }
 					siteUrl={ siteSlug }
-					CountrySelectMenu={ CountrySelectMenu }
 					countriesList={ countriesList }
 					StateSelect={ StateSelect }
 					renderDomainContactFields={ renderDomainContactFields }
@@ -606,32 +602,6 @@ function useRedirectIfCartEmpty( items, redirectUrl, isLoading ) {
 	}, [ redirectUrl, items, prevItemsLength, isLoading ] );
 }
 
-function useCountryList( overrideCountryList ) {
-	// Should we fetch the country list from global state?
-	const shouldFetchList = overrideCountryList?.length <= 0;
-
-	const [ countriesList, setCountriesList ] = useState( overrideCountryList );
-
-	const reduxDispatch = useDispatch();
-	const globalCountryList = useSelector( ( state ) => getCountries( state, 'payments' ) );
-
-	// Has the global list been populated?
-	const isListFetched = globalCountryList?.length > 0;
-
-	useEffect( () => {
-		if ( shouldFetchList ) {
-			if ( isListFetched ) {
-				setCountriesList( globalCountryList );
-			} else {
-				debug( 'countries list is empty; dispatching request for data' );
-				reduxDispatch( fetchPaymentCountries() );
-			}
-		}
-	}, [ shouldFetchList, isListFetched, globalCountryList, reduxDispatch ] );
-
-	return countriesList;
-}
-
 function useRecordCheckoutLoaded(
 	recordEvent,
 	isLoadingCart,
@@ -661,47 +631,6 @@ function useRecordCheckoutLoaded(
 		} );
 		hasRecordedCheckoutLoad.current = true;
 	}
-}
-
-function CountrySelectMenu( {
-	translate,
-	onChange,
-	isDisabled,
-	isError,
-	errorMessage,
-	currentValue,
-	countriesList,
-} ) {
-	const countrySelectorId = 'country-selector';
-	const countrySelectorLabelId = 'country-selector-label';
-	const countrySelectorDescriptionId = 'country-selector-description';
-
-	return (
-		<FormFieldAnnotation
-			labelText={ translate( 'Country' ) }
-			isError={ isError }
-			isDisabled={ isDisabled }
-			formFieldId={ countrySelectorId }
-			labelId={ countrySelectorLabelId }
-			descriptionId={ countrySelectorDescriptionId }
-			errorDescription={ errorMessage }
-		>
-			<FormCountrySelect
-				id={ countrySelectorId }
-				countriesList={ [
-					{ code: '', name: translate( 'Select Country' ) },
-					{ code: null, name: '' },
-					...countriesList,
-				] }
-				translate={ translate }
-				onChange={ onChange }
-				disabled={ isDisabled }
-				value={ currentValue }
-				aria-labelledby={ countrySelectorLabelId }
-				aria-describedby={ countrySelectorDescriptionId }
-			/>
-		</FormFieldAnnotation>
-	);
 }
 
 function useCachedDomainContactDetails() {
