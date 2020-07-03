@@ -271,8 +271,8 @@ export default function WPCheckout( {
 								// Touch the fields so they display validation errors
 								touchContactFields();
 								updateCartContactDetails();
-
-								return validateContactDetailsAndDisplayErrors();
+								// TODO: Refactor validateContactDetailsAndDisplayErrors() to accommodate isLoggedOutCart
+								return isLoggedOutCart || validateContactDetailsAndDisplayErrors();
 							} }
 							activeStepContent={
 								<WPContactForm
