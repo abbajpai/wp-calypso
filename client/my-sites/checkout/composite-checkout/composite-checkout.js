@@ -98,7 +98,13 @@ const wpcom = wp.undocumented();
 
 // Aliasing wpcom functions explicitly bound to wpcom is required here;
 // otherwise we get `this is not defined` errors.
-const wpcomGetCart = ( ...args ) => wpcom.getCart( ...args );
+const wpcomGetCart = ( ...args ) => {
+	if ( 'no-user' === args[ 0 ] ) {
+		return Promise.resolve( args[ 1 ] );
+	}
+
+	return wpcom.getCart( ...args );
+};
 const wpcomSetCart = ( ...args ) => wpcom.setCart( ...args );
 const wpcomGetStoredCards = ( ...args ) => wpcom.getStoredCards( ...args );
 
@@ -213,6 +219,7 @@ export default function CompositeCheckout( {
 		setCart || wpcomSetCart,
 		getCart || wpcomGetCart,
 		showAddCouponSuccessMessage,
+		cart,
 		recordEvent
 	);
 
@@ -332,8 +339,11 @@ export default function CompositeCheckout( {
 	useRedirectIfCartEmpty( items, `/plans/${ siteSlug || '' }`, isLoadingCart );
 
 	const { storedCards, isLoading: isLoadingStoredCards } = useStoredCards(
-		getStoredCards || wpcomGetStoredCards
+		getStoredCards || wpcomGetStoredCards,
+		() => {},
+		isLoggedOutCart
 	);
+
 	const {
 		canMakePayment: isApplePayAvailable,
 		isLoading: isApplePayLoading,
@@ -499,7 +509,7 @@ export default function CompositeCheckout( {
 			<QueryPlans />
 			<QueryProducts />
 			<QueryContactDetailsCache />
-			<QueryStoredCards />
+			{ ! isLoggedOutCart && <QueryStoredCards /> }
 
 			<PageViewTracker path={ analyticsPath } title="Checkout" properties={ analyticsProps } />
 			<CheckoutProvider
