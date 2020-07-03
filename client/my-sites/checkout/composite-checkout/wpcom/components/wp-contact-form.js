@@ -37,6 +37,7 @@ export default function WPContactForm( {
 	renderDomainContactFields,
 	shouldShowContactDetailsValidationErrors,
 	contactValidationCallback,
+	isLoggedOutCart,
 } ) {
 	const translate = useTranslate();
 	const [ items ] = useLineItems();
@@ -74,6 +75,7 @@ export default function WPContactForm( {
 				countriesList={ countriesList }
 				shouldShowContactDetailsValidationErrors={ shouldShowContactDetailsValidationErrors }
 				isDisabled={ isDisabled }
+				isLoggedOutCart={ isLoggedOutCart }
 			/>
 		</BillingFormFields>
 	);
@@ -140,6 +142,7 @@ function TaxFields( {
 	updatePostalCode,
 	updateCountryCode,
 	isDisabled,
+	isLoggedOutCart,
 } ) {
 	const translate = useTranslate();
 	const { postalCode, countryCode } = taxInfo;
@@ -160,6 +163,18 @@ function TaxFields( {
 					isError={ postalCode.isTouched && ! isValid( postalCode ) }
 					errorMessage={ translate( 'This field is required.' ) }
 				/>
+				{ isLoggedOutCart && (
+					<Field
+						id={ section + '-signup-email' }
+						type="email"
+						label={ translate( 'Email' ) }
+						disabled={ isDisabled }
+						// onChange={ ( value ) => {
+						// 	updatePostalCode( value );
+						// } }
+						autoComplete={ section + ' email' }
+					/>
+				) }
 			</LeftColumn>
 
 			<RightColumn>
@@ -282,6 +297,7 @@ function RenderContactDetails( {
 	countriesList,
 	shouldShowContactDetailsValidationErrors,
 	isDisabled,
+	isLoggedOutCart,
 } ) {
 	const requiresVatId = isEligibleForVat( contactInfo.countryCode.value );
 	const domainNames = useDomainNamesInCart();
@@ -329,6 +345,7 @@ function RenderContactDetails( {
 			<ContactDetailsFormDescription>
 				{ translate( 'Entering your billing information helps us prevent fraud.' ) }
 			</ContactDetailsFormDescription>
+
 			<TaxFields
 				section="contact"
 				taxInfo={ contactInfo }
@@ -337,6 +354,7 @@ function RenderContactDetails( {
 				CountrySelectMenu={ CountrySelectMenu }
 				countriesList={ countriesList }
 				isDisabled={ isDisabled }
+				isLoggedOutCart={ isLoggedOutCart }
 			/>
 			{ requiresVatId && <VatIdField /> }
 		</React.Fragment>
